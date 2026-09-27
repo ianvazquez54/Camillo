@@ -11,18 +11,45 @@ Camillo uses multiple AI agents, each with its own job:
 - **Company matcher:** links each trend to its public parent company and stock ticker
 - **Reporter:** summarizes the strongest signals into a short daily report
 
+Each run saves a snapshot, so the trend analyst can compare today's mentions with the previous week and flag brands that are growing or showing up for the first time.
+
 ## Built with
 
 - Python
 - Claude API (Anthropic)
-- Reddit API
+- Reddit data (public JSON pages)
+
+## Run it
+
+```
+pip install -r requirements.txt
+cp .env.example .env        # then add your Anthropic API key to .env
+python -m camillo
+```
+
+Scan specific subreddits:
+
+```
+python -m camillo --subreddits Sneakers SkincareAddiction --limit 25
+```
+
+The report is saved to `reports/<date>.md`. Run it once a day to build up history for the growth numbers.
+
+## Tests
+
+```
+pip install pytest
+python -m pytest
+```
+
+The tests run the whole pipeline offline with sample posts and a stand-in for the Claude API.
 
 ## Status
 
-In progress. The core pipeline is set up, and I'm currently connecting the Reddit data source and wiring the agents together end to end.
+In progress. All four agents are built and tested end to end with sample data. Next up: daily runs on live Reddit data and tracking whether early signals line up with later company results.
 
 ## Why I built it
 
 I'm a finance student at UNCG and I invest on my own. I wanted to learn how AI agents actually work by building something I'd use myself.
 
-
+_Research only, not investment advice._
