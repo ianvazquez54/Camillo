@@ -41,10 +41,10 @@ class ClaudeClient:
         )
         for block in response.content:
             if block.type == "tool_use" and isinstance(block.input, dict):
-                return block.input
+                return clean(block.input)
         # Fall back to reading any plain text reply
         text = "".join(getattr(b, "text", "") for b in response.content)
-        return parse_json(text)
+        return clean(parse_json(text))
 
     def ask_json(self, system, prompt, max_tokens=8000):
         """Send a prompt and return Claude's answer as a dict ({} if it fails twice)."""
@@ -59,6 +59,30 @@ class ClaudeClient:
                 last_error = exc
         print(f"  warning: skipped one batch, Claude's reply could not be read ({last_error})")
         return {}
+
+
+def clean(result):
+    """Tidy up a reply so every agent gets lists of dicts.
+
+    Sometimes Claude packs a list inside a string, like
+    {"mentions": "[{\"brand\": \"HOKA\"}]"}. This unpacks those strings
+    and drops any list items that aren't objects.
+    """
+    if not isinstance(result, dict):
+        return result
+    tidy = {}
+    for key, value in result.items():
+        if isinstance(value, str) and value.strip()[:1] in ("[", "{"):
+            try:
+                value = parse_json(value)
+            except ValueError:
+                pass
+        if isinstance(value, dict) and key in ("mentions", "companies", "signals"):
+            value = [value]
+        if isinstance(value, list):
+            value = [item for item in value if isinstance(item, dict)]
+        tidy[key] = value
+    return tidy
 
 
 def parse_json(text):
